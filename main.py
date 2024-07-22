@@ -58,7 +58,9 @@ def main():
 
 
 def handle(emily: pd.DataFrame, them: pd.DataFrame):
-    for _, row in emily.iterrows():
+    missing = pd.DataFrame(columns=["Name", "Course", "Title"])
+
+    for i, row in emily.iterrows():
         name = "{}, {}".format(row["last"].strip(), row["first"].strip())
         course = "{}{}".format(row["prefix"].strip(), str(row["suffix"]).strip())
         title = str(row["title"]).strip()
@@ -70,9 +72,13 @@ def handle(emily: pd.DataFrame, them: pd.DataFrame):
         if filtered.empty:
             msg = "No match: {} - {} - {}".format(name, course, title)
             logger.info(msg)
-            st.write(msg)
+            # st.write(msg)
+            missing.loc[i] = [name, course, title]
         else:
             logger.debug("Match: {} - {} - {}".format(name, course, title))
+
+    st.header("Missing entries")
+    st.table(missing)
 
 
 if __name__ == "__main__":
