@@ -2,6 +2,9 @@ import logging
 
 import pandas as pd
 import streamlit as st
+import math
+
+from typing import Optional
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO
@@ -9,76 +12,65 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def spike():
-    logger.info("Loading Emily's sheet")
-    emily = pd.read_excel(
-        "/Users/harogers/Downloads/June RegistrationMaster.xlsx",
-        usecols=[2, 3, 5, 6, 7],
-        names=["last", "first", "prefix", "suffix", "title"],
-    )
-
-    logger.info("Loading their sheet")
-    them = pd.read_excel("/Users/harogers/Downloads/June roster.xlsx")
-
-    logger.info("Reading rows")
-    for _, row in emily.iterrows():
-        name = "{}, {}".format(row["last"].strip(), row["first"].strip())
-        course = "{}{}".format(row["prefix"].strip(), str(row["suffix"]).strip())
-        title = str(row["title"]).strip()
-
-        filtered = them[
-            (them["Name"].str.lower() == name.lower()) & (them["COURSE"] == course)
-        ]
-
-        if filtered.empty:
-            logger.info("No match: {} - {} - {}".format(name, course, title))
-        else:
-            logger.debug("Match: {} - {} - {}".format(name, course, title))
-
-    # dfs = {sheet_name: xl_file.parse(sheet_name)
-    #         for sheet_name in xl_file.sheet_names}
-
-
 def main():
     st.title("Emily's thing")
     emily_file = st.file_uploader("Emily's spreadsheet")
-    them_file = st.file_uploader("Their spreadsheet")
+    theirs_file = st.file_uploader("Their spreadsheet")
 
     if emily_file is not None:
-        emily_df = pd.read_excel(
+        ours_df = pd.read_excel(
             emily_file,
-            usecols=[2, 3, 5, 6, 7],
-            names=["last", "first", "prefix", "suffix", "title"],
+            usecols=[0, 2, 3, 5, 6, 7],
+            names=["student_id", "last", "first", "prefix", "suffix", "title"],
         )
 
-        if them_file is not None:
-            them_df = pd.read_excel(them_file)
+        if theirs_file is not None:
+            theirs_df = pd.read_excel(theirs_file)
 
-            handle(emily=emily_df, them=them_df)
+            handle(ours=ours_df, theirs=theirs_df)
 
 
-def handle(emily: pd.DataFrame, them: pd.DataFrame):
-    missing = pd.DataFrame(columns=["Name", "Course", "Title"])
+def handle(ours: pd.DataFrame, theirs: pd.DataFrame):
+    missing_theirs = pd.DataFrame(columns=["ID", "Name", "Course", "Title"])
 
-    for i, row in emily.iterrows():
-        name = "{}, {}".format(row["last"].strip(), row["first"].strip())
-        course = "{}{}".format(row["prefix"].strip(), str(row["suffix"]).strip())
-        title = str(row["title"]).strip()
+    for i, row in ours.iterrows():
+        student_id: Optional[str] = row["student_id"]
+        if not isinstance(student_id, str):
+            student_id = None
 
-        filtered = them[
-            (them["Name"].str.lower() == name.lower()) & (them["COURSE"] == course)
-        ]
+        student_name = "{}, {}".format(row["last"].strip(), row["first"].strip())
+        course_id = "{}{}".format(row["prefix"].strip(), str(row["suffix"]).strip())
+        course_title = str(row["title"]).strip()
+
+        filtered: pd.Series = None
+        if student_id:
+            filtered = theirs[
+                (theirs["ID"] == student_id) & (theirs["COURSE"] == course_id)
+            ]
+        else:
+            # No ID. Compare by name
+            filtered = theirs[
+                (theirs["Name"].str.lower() == student_name.lower())
+                & (theirs["COURSE"] == course_id)
+            ]
 
         if filtered.empty:
-            msg = "No match: {} - {} - {}".format(name, course, title)
+            msg = "No match: {} - {} - {}".format(student_name, course_id, course_title)
             logger.info(msg)
             # st.write(msg)
-            missing.loc[i] = [name, course, title]
+            missing_theirs.loc[i] = [
+                student_id or "[not found]",
+                student_name,
+                course_id,
+                course_title,
+            ]
         else:
-            logger.debug("Match: {} - {} - {}".format(name, course, title))
+            logger.debug(
+                "Match: {} - {} - {}".format(student_name, course_id, course_title)
+            )
 
-    st.header("Missing entries")
-    st.table(missing)
+    st.header("Registrations missing from their sheet")
+    st.table(missing_theirs)
 
 
 if __name__ == "__main__":
