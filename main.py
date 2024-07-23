@@ -27,7 +27,7 @@ def main():
         if theirs_file is not None:
             theirs_df = pd.read_excel(theirs_file)
 
-            # handle_ours_vs_theirs(ours=ours_df, theirs=theirs_df)
+            handle_ours_vs_theirs(ours=ours_df, theirs=theirs_df)
             handle_theirs_vs_ours(ours=ours_df, theirs=theirs_df)
 
 
@@ -71,14 +71,6 @@ def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame):
             matched = True
             logger.info("Match: %s, %s", student_name, course_id)
             break
-
-        # filtered = ours[
-        #     (ours["student_id"].str == student_id)
-        #     & (ours["prefix"].str.strip() == course_prefix)
-        #     & (ours["suffix"].str.strip() == course_suffix)
-        # ]
-
-        # TODO: if no match, try first last
 
         if not matched:
             missing.loc[i] = [
