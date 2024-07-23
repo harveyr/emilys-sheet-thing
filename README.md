@@ -1,1 +1,1 @@
-# Spreadsheet hackery for a friend
+Spreadsheet hackery for a friend
