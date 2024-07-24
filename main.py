@@ -14,23 +14,23 @@ logger = logging.getLogger(__name__)
 
 def main():
     st.title("Emily's thing")
-    emily_file = st.file_uploader("Our spreadsheet (Emily's)")
-    theirs_file = st.file_uploader("Their spreadsheet")
+    our_file = st.file_uploader("Our spreadsheet (Emily's)")
+    their_file = st.file_uploader("Their spreadsheet")
 
-    if emily_file is not None:
+    if our_file is not None:
         with st.spinner("Loading sheet..."):
-            ours_df = pd.read_excel(
-                emily_file,
+            our_df = pd.read_excel(
+                our_file,
                 usecols=[0, 2, 3, 5, 6, 7],
                 names=["student_id", "last", "first", "prefix", "suffix", "title"],
             )
 
-        if theirs_file is not None:
+        if their_file is not None:
             with st.spinner("Loading sheet..."):
-                theirs_df = pd.read_excel(theirs_file)
+                their_df = pd.read_excel(their_file)
 
-            handle_ours_vs_theirs(ours=ours_df, theirs=theirs_df)
-            handle_theirs_vs_ours(ours=ours_df, theirs=theirs_df)
+            handle_ours_vs_theirs(ours=our_df, theirs=their_df)
+            handle_theirs_vs_ours(ours=our_df, theirs=their_df)
 
 
 def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame):
