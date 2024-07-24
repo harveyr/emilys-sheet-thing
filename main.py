@@ -18,14 +18,16 @@ def main():
     theirs_file = st.file_uploader("Their spreadsheet")
 
     if emily_file is not None:
-        ours_df = pd.read_excel(
-            emily_file,
-            usecols=[0, 2, 3, 5, 6, 7],
-            names=["student_id", "last", "first", "prefix", "suffix", "title"],
-        )
+        with st.spinner("Loading sheet..."):
+            ours_df = pd.read_excel(
+                emily_file,
+                usecols=[0, 2, 3, 5, 6, 7],
+                names=["student_id", "last", "first", "prefix", "suffix", "title"],
+            )
 
         if theirs_file is not None:
-            theirs_df = pd.read_excel(theirs_file)
+            with st.spinner("Loading sheet..."):
+                theirs_df = pd.read_excel(theirs_file)
 
             handle_ours_vs_theirs(ours=ours_df, theirs=theirs_df)
             handle_theirs_vs_ours(ours=ours_df, theirs=theirs_df)
