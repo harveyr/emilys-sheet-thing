@@ -36,17 +36,17 @@ def finish(ours: pd.DataFrame, theirs: pd.DataFrame):
     missing_theirs: pd.DataFrame = handle_ours_vs_theirs(ours=ours, theirs=theirs)
     missing_ours: pd.DataFrame = handle_theirs_vs_ours(ours=ours, theirs=theirs)
 
-    for header, df in [
-        ("Registrations in our sheet missing from theirs", missing_theirs),
-        ("Registrations in our their sheet missing from ours", missing_ours),
+    for missing_key, df in [
+        ("their", missing_theirs),
+        ("our", missing_ours),
     ]:
-        st.header(header)
+        st.header(f"Registrations missing from {missing_key} sheet")
         st.download_button(
             "Download",
             df_to_csv(df),
             "file.csv",
             "text/csv",
-            key="download-csv",
+            key=f"download-csv-missing-{missing_key}",
         )
         st.table(df)
 
