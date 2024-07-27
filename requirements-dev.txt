@@ -3,4 +3,5 @@
 ruff
 pyright
 ipython
+ipdb
 watchdog

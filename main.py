@@ -29,11 +29,29 @@ def main():
             with st.spinner("Loading sheet..."):
                 their_df = pd.read_excel(their_file)
 
-            handle_ours_vs_theirs(ours=our_df, theirs=their_df)
-            handle_theirs_vs_ours(ours=our_df, theirs=their_df)
+            finish(ours=our_df, theirs=their_df)
 
 
-def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame):
+def finish(ours: pd.DataFrame, theirs: pd.DataFrame):
+    missing_theirs: pd.DataFrame = handle_ours_vs_theirs(ours=ours, theirs=theirs)
+    missing_ours: pd.DataFrame = handle_theirs_vs_ours(ours=ours, theirs=theirs)
+
+    for header, df in [
+        ("Registrations in our sheet missing from theirs", missing_theirs),
+        ("Registrations in our their sheet missing from ours", missing_ours),
+    ]:
+        st.header(header)
+        st.download_button(
+            "Download",
+            df_to_csv(df),
+            "file.csv",
+            "text/csv",
+            key="download-csv",
+        )
+        st.table(df)
+
+
+def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFrame:
     missing = pd.DataFrame(
         columns=["ID", "Name", "Course Prefix", "Course Number", "Title"]
     )
@@ -65,9 +83,33 @@ def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame):
             if student_id != c_row["student_id"] and (
                 first != c_row["first"] and last != c_row["last"]
             ):
+                if "Ochiae" in student_name:
+                    from pprint import pprint
+
+                    pprint(
+                        dict(
+                            student_id=student_id,
+                            student_name=student_name,
+                            course_id=course_id,
+                            course_prefix=course_prefix,
+                            course_suffix=course_suffix,
+                        )
+                    )
                 continue
 
             if course_id != c_row["prefix"].strip() + str(c_row["suffix"]).strip():
+                if "Ochiae" in student_name:
+                    from pprint import pprint
+
+                    pprint(
+                        dict(
+                            student_id=student_id,
+                            student_name=student_name,
+                            course_id=course_id,
+                            course_prefix=course_prefix,
+                            course_suffix=course_suffix,
+                        )
+                    )
                 continue
 
             matched = True
@@ -83,11 +125,10 @@ def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame):
                 course_title,
             ]
 
-    st.header("Registrations in their sheet missing from ours")
-    st.table(missing)
+    return missing
 
 
-def handle_ours_vs_theirs(ours: pd.DataFrame, theirs: pd.DataFrame):
+def handle_ours_vs_theirs(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFrame:
     missing = pd.DataFrame(columns=["ID", "Name", "Course", "Title"])
 
     for i, row in ours.iterrows():
@@ -126,8 +167,12 @@ def handle_ours_vs_theirs(ours: pd.DataFrame, theirs: pd.DataFrame):
                 "Match: {} - {} - {}".format(student_name, course_id, course_title)
             )
 
-    st.header("Registrations in our sheet missing from theirs")
-    st.table(missing)
+    return missing
+
+
+def df_to_csv(df: pd.DataFrame):
+    # Borrowed from https://docs.streamlit.io/knowledge-base/using-streamlit/how-download-pandas-dataframe-csv
+    return df.to_csv(index=False).encode("utf-8")
 
 
 if __name__ == "__main__":
