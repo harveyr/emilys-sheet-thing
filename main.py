@@ -61,7 +61,6 @@ def handle_ours_vs_theirs(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFr
 
         student_name = "{}, {}".format(row["last"].strip(), row["first"].strip())
         course_id = "{}{}".format(row["prefix"].strip(), str(row["suffix"]).strip())
-        course_title = str(row["title"]).strip()
 
         filtered: pd.Series = None
         if student_id:
@@ -76,6 +75,11 @@ def handle_ours_vs_theirs(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFr
             ]
 
         if filtered.empty:
+            course_title = str(row["title"]).strip()
+            # TODO: Better way of testing for nan
+            if course_title == "nan":
+                course_title = "[not found]"
+
             msg = "No match: {} - {} - {}".format(student_name, course_id, course_title)
             logger.info(msg)
             # st.write(msg)
@@ -122,36 +126,28 @@ def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFr
         matched = False
 
         for _, c_row in ours.iterrows():
+            # TODO: Find the rows in each sheet that have his name. Compare them.
+            if "Ochiae" in student_name:
+                from pprint import pprint
+
+                pprint(
+                    dict(
+                        student_id=student_id,
+                        student_name=student_name,
+                        course_id=course_id,
+                        course_prefix=course_prefix,
+                        course_suffix=course_suffix,
+                    )
+                )
+
             if student_id != c_row["student_id"] and (
                 first != c_row["first"] and last != c_row["last"]
             ):
-                if "Ochiae" in student_name:
-                    from pprint import pprint
-
-                    pprint(
-                        dict(
-                            student_id=student_id,
-                            student_name=student_name,
-                            course_id=course_id,
-                            course_prefix=course_prefix,
-                            course_suffix=course_suffix,
-                        )
-                    )
+                # Neither student ID nor the names match
                 continue
 
             if course_id != c_row["prefix"].strip() + str(c_row["suffix"]).strip():
-                if "Ochiae" in student_name:
-                    from pprint import pprint
-
-                    pprint(
-                        dict(
-                            student_id=student_id,
-                            student_name=student_name,
-                            course_id=course_id,
-                            course_prefix=course_prefix,
-                            course_suffix=course_suffix,
-                        )
-                    )
+                # Course ID doesn't match
                 continue
 
             matched = True
