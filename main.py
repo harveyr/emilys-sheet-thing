@@ -44,11 +44,53 @@ def finish(ours: pd.DataFrame, theirs: pd.DataFrame):
         st.download_button(
             "Download",
             df_to_csv(df),
-            "file.csv",
+            f"missing_from_{missing_key}s.csv",
             "text/csv",
             key=f"download-csv-missing-{missing_key}",
         )
         st.table(df)
+
+
+def handle_ours_vs_theirs(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFrame:
+    missing = pd.DataFrame(columns=["ID", "Name", "Course", "Title"])
+
+    for i, row in ours.iterrows():
+        student_id: Optional[str] = row["student_id"]
+        if not isinstance(student_id, str):
+            student_id = None
+
+        student_name = "{}, {}".format(row["last"].strip(), row["first"].strip())
+        course_id = "{}{}".format(row["prefix"].strip(), str(row["suffix"]).strip())
+        course_title = str(row["title"]).strip()
+
+        filtered: pd.Series = None
+        if student_id:
+            filtered = theirs[
+                (theirs["ID"] == student_id) & (theirs["COURSE"] == course_id)
+            ]
+        else:
+            # No ID. Compare by name
+            filtered = theirs[
+                (theirs["Name"].str.lower() == student_name.lower())
+                & (theirs["COURSE"] == course_id)
+            ]
+
+        if filtered.empty:
+            msg = "No match: {} - {} - {}".format(student_name, course_id, course_title)
+            logger.info(msg)
+            # st.write(msg)
+            missing.loc[i] = [
+                student_id or "[not found]",
+                student_name,
+                course_id,
+                course_title,
+            ]
+        else:
+            logger.debug(
+                "Match: {} - {} - {}".format(student_name, course_id, course_title)
+            )
+
+    return missing
 
 
 def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFrame:
@@ -124,48 +166,6 @@ def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFr
                 course_suffix,
                 course_title,
             ]
-
-    return missing
-
-
-def handle_ours_vs_theirs(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFrame:
-    missing = pd.DataFrame(columns=["ID", "Name", "Course", "Title"])
-
-    for i, row in ours.iterrows():
-        student_id: Optional[str] = row["student_id"]
-        if not isinstance(student_id, str):
-            student_id = None
-
-        student_name = "{}, {}".format(row["last"].strip(), row["first"].strip())
-        course_id = "{}{}".format(row["prefix"].strip(), str(row["suffix"]).strip())
-        course_title = str(row["title"]).strip()
-
-        filtered: pd.Series = None
-        if student_id:
-            filtered = theirs[
-                (theirs["ID"] == student_id) & (theirs["COURSE"] == course_id)
-            ]
-        else:
-            # No ID. Compare by name
-            filtered = theirs[
-                (theirs["Name"].str.lower() == student_name.lower())
-                & (theirs["COURSE"] == course_id)
-            ]
-
-        if filtered.empty:
-            msg = "No match: {} - {} - {}".format(student_name, course_id, course_title)
-            logger.info(msg)
-            # st.write(msg)
-            missing.loc[i] = [
-                student_id or "[not found]",
-                student_name,
-                course_id,
-                course_title,
-            ]
-        else:
-            logger.debug(
-                "Match: {} - {} - {}".format(student_name, course_id, course_title)
-            )
 
     return missing
 
