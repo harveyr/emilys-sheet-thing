@@ -6,6 +6,9 @@ all: check format
 streamlit:
 	streamlit run main.py
 
+.PHONY: run
+run: streamlit
+
 .PHONY: check
 check:
 	ruff check .

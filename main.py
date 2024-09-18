@@ -12,6 +12,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+EM_COL_STUDENT_ID = "Student ID"
+EM_COL_FIRST_NAME = "First Name"
+EM_COL_LAST_NAME = "Last Name"
+EM_COL_COURSE = "Course"
+EM_COL_COURSE_NUM = "Course Number"
+
+
 def main():
     st.title("Emily's thing")
     our_file = st.file_uploader("Our spreadsheet (Emily's)")
@@ -19,11 +26,7 @@ def main():
 
     if our_file is not None:
         with st.spinner("Loading sheet..."):
-            our_df = pd.read_excel(
-                our_file,
-                usecols=[0, 2, 3, 5, 6, 7],
-                names=["student_id", "last", "first", "prefix", "suffix", "title"],
-            )
+            our_df = pd.read_excel(our_file)
 
         if their_file is not None:
             with st.spinner("Loading sheet..."):
@@ -52,15 +55,19 @@ def finish(ours: pd.DataFrame, theirs: pd.DataFrame):
 
 
 def handle_ours_vs_theirs(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFrame:
-    missing = pd.DataFrame(columns=["ID", "Name", "Course", "Title"])
+    missing = pd.DataFrame(columns=["ID", "Name", "Course"])
 
     for i, row in ours.iterrows():
-        student_id: Optional[str] = row["student_id"]
+        student_id: Optional[str] = row[EM_COL_STUDENT_ID]
         if not isinstance(student_id, str):
             student_id = None
 
-        student_name = "{}, {}".format(row["last"].strip(), row["first"].strip())
-        course_id = "{}{}".format(row["prefix"].strip(), str(row["suffix"]).strip())
+        student_name = "{}, {}".format(
+            row[EM_COL_LAST_NAME].strip(), row[EM_COL_FIRST_NAME].strip()
+        )
+        course_id = "{}{}".format(
+            row[EM_COL_COURSE].strip(), str(row[EM_COL_COURSE_NUM]).strip()
+        )
 
         filtered: pd.Series = None
         if student_id:
@@ -75,38 +82,27 @@ def handle_ours_vs_theirs(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFr
             ]
 
         if filtered.empty:
-            course_title = str(row["title"]).strip()
-            # TODO: Better way of testing for nan
-            if course_title == "nan":
-                course_title = "[not found]"
-
-            msg = "No match: {} - {} - {}".format(student_name, course_id, course_title)
+            msg = "No match: {} - {}".format(student_name, course_id)
             logger.info(msg)
             # st.write(msg)
             missing.loc[i] = [
                 student_id or "[not found]",
                 student_name,
                 course_id,
-                course_title,
             ]
         else:
-            logger.debug(
-                "Match: {} - {} - {}".format(student_name, course_id, course_title)
-            )
+            logger.debug("Match: {} - {}".format(student_name, course_id))
 
     return missing
 
 
 def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFrame:
-    missing = pd.DataFrame(
-        columns=["ID", "Name", "Course Prefix", "Course Number", "Title"]
-    )
+    missing = pd.DataFrame(columns=["ID", "Name", "Course Prefix", "Course Number"])
 
     for i, row in theirs.iterrows():
         student_id = row["ID"]
         student_name = row["Name"]
         course_id = row["COURSE"]
-        course_title = row["TITLE"]
 
         if not isinstance(student_id, str):
             if not isinstance(course_id, str):
@@ -140,13 +136,16 @@ def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFr
                     )
                 )
 
-            if student_id != c_row["student_id"] and (
-                first != c_row["first"] and last != c_row["last"]
+            if student_id != c_row[EM_COL_STUDENT_ID] and (
+                first != c_row[EM_COL_FIRST_NAME] and last != c_row[EM_COL_LAST_NAME]
             ):
                 # Neither student ID nor the names match
                 continue
 
-            if course_id != c_row["prefix"].strip() + str(c_row["suffix"]).strip():
+            if (
+                course_id
+                != c_row[EM_COL_COURSE].strip() + str(c_row[EM_COL_COURSE_NUM]).strip()
+            ):
                 # Course ID doesn't match
                 continue
 
@@ -160,7 +159,6 @@ def handle_theirs_vs_ours(ours: pd.DataFrame, theirs: pd.DataFrame) -> pd.DataFr
                 student_name,
                 course_prefix,
                 course_suffix,
-                course_title,
             ]
 
     return missing
